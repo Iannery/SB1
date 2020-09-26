@@ -13,6 +13,10 @@ Montador::Montador(string asm_path_to_file){
     this->asm_path = asm_path_to_file;
     this->preprocessed_path = this->asm_path.substr(0, this->asm_path.find("asm")) + "pre";
     this->mounted_path = this->asm_path.substr(0, this->asm_path.find("asm")) + "obj";
+    this->macro_label1 = "";
+    this->macro_label2 = "";
+    this->macro_command = "";
+    
 }
 
 void Montador::inicializar_processo(string command){
@@ -131,18 +135,31 @@ void Montador::macro_expander(){
                     command_list.begin() + macro_position_begin,
                     command_list.begin() + macro_position_end + 1);
                 macro_begin_flag = 0;
+                i = 0;
             }
         }
         for (int i = 0; i < command_list.size(); i++){
             command_line = command_list.at(i);
             // EXPANDE AS MACROS DA LABEL 1
-            if (command_line.find(this->macro_label1) != std::string::npos 
-            && command_line.find(":") == std::string::npos){
+            if (command_line == this->macro_label1
+            && command_line.find(":") == std::string::npos
+            && !this->macro_label1.empty()){
                 command_list.erase(command_list.begin() + i);
                 command_list.insert(
                     command_list.begin() + i,
                     this->macro_command_list1.begin(),
                     this->macro_command_list1.end());
+            }
+
+            //EXPANDE AS MACROS DA LABEL 2
+            if (command_line == this->macro_label2
+            && command_line.find(":") == std::string::npos
+            && !this->macro_label2.empty()){
+                command_list.erase(command_list.begin() + i);
+                command_list.insert(
+                    command_list.begin() + i,
+                    this->macro_command_list2.begin(),
+                    this->macro_command_list2.end());
             }
         }
 
