@@ -16,6 +16,10 @@ Montador::Montador(string asm_path_to_file){
     this->macro_label1 = "";
     this->macro_label2 = "";
     this->macro_command = "";
+    this->macro1_arg1 = "";
+    this->macro1_arg2 = "";
+    this->macro2_arg1 = "";
+    this->macro2_arg2 = "";
     
 }
 
@@ -65,20 +69,64 @@ void Montador::preprocess(){
     }
 }
 
+void Montador::macro_argument_finder(string declaration_line, int macro_count){
+    int macro_arg1_pos = 0, 
+        macro_arg2_pos = 0, 
+        occurrences = 0;
+    string arg_substr;
+    arg_substr = declaration_line.substr(declaration_line.find("MACRO") + 5, declaration_line.length());
+    if(arg_substr.length() > 1){
+        for(int i = 1; i < arg_substr.length(); i++){
+            if(arg_substr.at(i) == '&'){
+                occurrences++;
+                if(occurrences == 1){
+                    macro_arg1_pos = i;
+                }
+                else if(occurrences == 2){
+                    macro_arg2_pos = i;
+                }
+            }
+        }
+        if(macro_count == 1){
+            switch(occurrences){
+                case 1:
+                    this->macro1_arg1 = arg_substr.substr(macro_arg1_pos, arg_substr.length());
+                    break;
+                case 2:
+                    this->macro1_arg1 = arg_substr.substr(macro_arg1_pos, macro_arg2_pos - 1);
+                    this->macro1_arg2 = arg_substr.substr(macro_arg2_pos, arg_substr.length());
+                    break;
+            }
+            cout << this->macro1_arg1 << "\t" << this->macro1_arg2 << endl;
+        }
+        else if(macro_count == 2){
+
+            switch(occurrences){
+                case 1:
+                    this->macro2_arg1 = arg_substr.substr(macro_arg1_pos, arg_substr.length());
+                    break;
+                case 2:
+                    this->macro2_arg1 = arg_substr.substr(macro_arg1_pos, macro_arg2_pos - 1);
+                    this->macro2_arg2 = arg_substr.substr(macro_arg2_pos, arg_substr.length());
+                    break;
+            }
+            cout << this->macro2_arg1 << "\t" << this->macro2_arg2 << endl;
+        }
+    }
+}
+
 void Montador::macro_identifier(){
     int macro_count = 0;
     ifstream preprocessed_file;
-
     preprocessed_file.open(this->preprocessed_path);
     if (preprocessed_file.is_open()){
         while (preprocessed_file.good()){
             getline(preprocessed_file, this->line);
-            // ROTINA PARA CASO ACHE A(S) DIRETIVA(S) DE MACRO
-            // ta feio e mal optimizado, mas funciona!!
-            // o ian do futuro vai arrumar, eu tenho certeza
+
             if (this->line.find("MACRO") != std::string::npos){
                 macro_count++;
                 if (macro_count == 1){
+                    macro_argument_finder(this->line, macro_count);
                     this->macro_label1 = this->line.substr(0, this->line.find(":"));
 
                     while (this->line.find("ENDMACRO") == std::string::npos){
@@ -89,6 +137,7 @@ void Montador::macro_identifier(){
                     this->macro_command_list1.pop_back();
                 }
                 else if (macro_count == 2){
+                    macro_argument_finder(this->line, macro_count);
                     this->macro_label2 = this->line.substr(0, this->line.find(":"));
                     while (this->line.find("ENDMACRO") == std::string::npos){
                         getline(preprocessed_file, this->line);

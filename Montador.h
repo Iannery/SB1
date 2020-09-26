@@ -21,10 +21,12 @@ private:
     void macro_handler();
     void macro_identifier();
     void macro_expander();
+    void macro_argument_finder(string declaration_line, int macro_count);
     string asm_path, preprocessed_path, mounted_path, line;
 
     vector<string> macro_command_list1, macro_command_list2;
     string macro_label1, macro_label2, macro_command;
+    string macro1_arg1, macro1_arg2, macro2_arg1, macro2_arg2;
 };
 
 
