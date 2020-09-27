@@ -13,13 +13,13 @@ Montador::Montador(string asm_path_to_file){
     this->asm_path = asm_path_to_file;
     this->preprocessed_path = this->asm_path.substr(0, this->asm_path.find("asm")) + "pre";
     this->mounted_path = this->asm_path.substr(0, this->asm_path.find("asm")) + "obj";
-    this->macro_label1 = "";
-    this->macro_label2 = "";
+    this->macro_label1  = "";
+    this->macro_label2  = "";
     this->macro_command = "";
-    this->macro1_arg1 = "";
-    this->macro1_arg2 = "";
-    this->macro2_arg1 = "";
-    this->macro2_arg2 = "";
+    this->macro1_arg1   = "";
+    this->macro1_arg2   = "";
+    this->macro2_arg1   = "";
+    this->macro2_arg2   = "";
     
 }
 
@@ -97,7 +97,7 @@ void Montador::macro_argument_finder(string declaration_line, int macro_count){
                     this->macro1_arg2 = arg_substr.substr(macro_arg2_pos, arg_substr.length());
                     break;
             }
-            cout << this->macro1_arg1 << "\t" << this->macro1_arg2 << endl;
+            // cout << this->macro1_arg1 << "\t" << this->macro1_arg2 << endl;
         }
         else if(macro_count == 2){
 
@@ -110,7 +110,7 @@ void Montador::macro_argument_finder(string declaration_line, int macro_count){
                     this->macro2_arg2 = arg_substr.substr(macro_arg2_pos, arg_substr.length());
                     break;
             }
-            cout << this->macro2_arg1 << "\t" << this->macro2_arg2 << endl;
+            // cout << this->macro2_arg1 << "\t" << this->macro2_arg2 << endl;
         }
     }
 }
@@ -156,10 +156,10 @@ void Montador::macro_identifier(){
 }
 
 void Montador::macro_expander(){
-    int macro_position_begin, macro_position_end, macro_begin_flag = 0;
+    int macro_position_begin, macro_position_end, macro_begin_flag = 0, macro_label_position;
     ifstream preprocessed_file_in;
     ofstream preprocessed_file_out;
-    string command_line;
+    string command_line, macro_label_arg1, macro_label_arg2;
     vector<string> command_list;
     preprocessed_file_in.open(this->preprocessed_path);
     if (preprocessed_file_in.is_open()){
@@ -190,9 +190,17 @@ void Montador::macro_expander(){
         for (int i = 0; i < command_list.size(); i++){
             command_line = command_list.at(i);
             // EXPANDE AS MACROS DA LABEL 1
-            if (command_line == this->macro_label1
+            if (command_line.substr(0, command_line.find(" ")) == this->macro_label1
             && command_line.find(":") == std::string::npos
             && !this->macro_label1.empty()){
+
+                // A PRINCIPIO FUNCIONOU
+                if(!macro1_arg2.empty()){
+                    macro_label_position = this->macro_label1.length() + 1;
+                    macro_label_arg1 = command_line.substr(macro_label_position, command_line.find(" "));
+                    cout << "alo" << macro_label_arg1 << endl;
+                }
+
                 command_list.erase(command_list.begin() + i);
                 command_list.insert(
                     command_list.begin() + i,
@@ -201,7 +209,7 @@ void Montador::macro_expander(){
             }
 
             //EXPANDE AS MACROS DA LABEL 2
-            if (command_line == this->macro_label2
+            if (command_line.substr(0, command_line.find(" ")) == this->macro_label2
             && command_line.find(":") == std::string::npos
             && !this->macro_label2.empty()){
                 command_list.erase(command_list.begin() + i);
