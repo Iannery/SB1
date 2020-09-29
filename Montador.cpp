@@ -66,13 +66,16 @@ void Montador::preprocess(){
         asm_file.close();
         preprocessed_file.close();
         macro_handler();
+        // if_equ_handler();
+
     }
 }
 
 void Montador::macro_argument_finder(string declaration_line, int macro_count){
     int macro_arg1_pos = 0, 
         macro_arg2_pos = 0, 
-        occurrences = 0;
+        occurrences = 0,
+        flag_space_comma = 0;
     string arg_substr;
     arg_substr = declaration_line.substr(declaration_line.find("MACRO") + 5, declaration_line.length());
     if(arg_substr.length() > 1){
@@ -87,30 +90,43 @@ void Montador::macro_argument_finder(string declaration_line, int macro_count){
                 }
             }
         }
+        for(int i = macro_arg1_pos; i <= macro_arg2_pos; i++){
+            if(arg_substr.at(i) == ','){
+                flag_space_comma++;
+                if(arg_substr.at(i+1) == ' '){
+                    flag_space_comma++;
+                }
+            }
+        }
         if(macro_count == 1){
+            cout << flag_space_comma << endl;
+            getchar();
             switch(occurrences){
                 case 1:
                     this->macro1_arg1 = arg_substr.substr(macro_arg1_pos, arg_substr.length());
                     break;
                 case 2:
-                    this->macro1_arg1 = arg_substr.substr(macro_arg1_pos, macro_arg2_pos - 2);
+                    this->macro1_arg1 = arg_substr.substr(macro_arg1_pos, macro_arg2_pos - (flag_space_comma + 1));
                     this->macro1_arg2 = arg_substr.substr(macro_arg2_pos, arg_substr.length());
                     break;
             }
-            // cout << this->macro1_arg1 << "aaa\t" << this->macro1_arg2 << "bbb\t" << endl;
+            cout << this->macro1_arg1 << "aaa\t" << this->macro1_arg2 << "bbb\t" << endl;
         }
         else if(macro_count == 2){
-
+            cout << flag_space_comma << endl;
+            getchar();
             switch(occurrences){
+                
                 case 1:
                     this->macro2_arg1 = arg_substr.substr(macro_arg1_pos, arg_substr.length());
                     break;
                 case 2:
-                    this->macro2_arg1 = arg_substr.substr(macro_arg1_pos, macro_arg2_pos - 2);
+                    cout << "alo" << arg_substr << endl;
+                    this->macro2_arg1 = arg_substr.substr(macro_arg1_pos, macro_arg2_pos - (flag_space_comma + 1));
                     this->macro2_arg2 = arg_substr.substr(macro_arg2_pos, arg_substr.length());
                     break;
             }
-            // cout << this->macro2_arg1 << "\t" << this->macro2_arg2 << endl;
+            cout << this->macro2_arg1 << "\t" << this->macro2_arg2 << endl;
         }
     }
 }
@@ -196,8 +212,14 @@ void Montador::macro_expander(){
                 macro_label_position = this->macro_label1.length() + 1;
                 if(!macro1_arg2.empty()){
                     macro_label_arg1 = command_line.substr(macro_label_position, command_line.find(" "));
-                    macro_label_arg2 = macro_label_arg1.substr(macro_label_arg1.find(" ") + 1, macro_label_arg1.length());
-                    macro_label_arg1 = macro_label_arg1.substr(0, macro_label_arg1.find(" "));
+                    macro_label_arg2 = macro_label_arg1.substr(macro_label_arg1.find(",") + 1, macro_label_arg1.length());
+                    macro_label_arg1 = macro_label_arg1.substr(0, macro_label_arg1.find(","));
+                    if(macro_label_arg1.at(0) == ' '){
+                        macro_label_arg1.erase(0, 1);
+                    }
+                    if(macro_label_arg2.at(0) == ' '){
+                        macro_label_arg2.erase(0, 1);
+                    }
                     macro_command_list1_local = this->macro_command_list1;
                     for(size_t j = 0; j < macro_command_list1_local.size(); j++){
                         if(macro_command_list1_local.at(j).find(macro1_arg1) != std::string::npos){
@@ -245,9 +267,15 @@ void Montador::macro_expander(){
             && !this->macro_label2.empty()){
                 macro_label_position = this->macro_label2.length() + 1;
                 if(!macro2_arg2.empty()){
-                    macro_label_arg1 = command_line.substr(macro_label_position, command_line.find(" "));
-                    macro_label_arg2 = macro_label_arg1.substr(macro_label_arg1.find(" ") + 1, macro_label_arg1.length());
-                    macro_label_arg1 = macro_label_arg1.substr(0, macro_label_arg1.find(" "));
+                    macro_label_arg1 = command_line.substr(macro_label_position, command_line.find(","));
+                    macro_label_arg2 = macro_label_arg1.substr(macro_label_arg1.find(",") + 1, macro_label_arg1.length());
+                    macro_label_arg1 = macro_label_arg1.substr(0, macro_label_arg1.find(","));
+                    if(macro_label_arg1.at(0) == ' '){
+                        macro_label_arg1.erase(0, 1);
+                    }
+                    if(macro_label_arg2.at(0) == ' '){
+                        macro_label_arg2.erase(0, 1);
+                    }
                     macro_command_list2_local = this->macro_command_list2;
                     for(size_t j = 0; j < macro_command_list1_local.size(); j++){
                         if(macro_command_list2_local.at(j).find(macro2_arg1) != std::string::npos){
@@ -299,6 +327,10 @@ void Montador::macro_expander(){
         preprocessed_file_out.close();
     }
 }
+
+// void Montador::if_equ_handler(){
+//     vector<string> command_list;
+// }
 
 void Montador::macro_handler(){
     macro_identifier();
