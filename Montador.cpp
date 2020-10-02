@@ -7,7 +7,7 @@
 #include "Montador.h"
 using namespace std;
 
-#define PC_START 1
+#define PC_START 0
 
 Montador::Montador(string asm_path_to_file){
     this->asm_path = asm_path_to_file;
@@ -20,7 +20,6 @@ Montador::Montador(string asm_path_to_file){
     this->macro1_arg2   = "";
     this->macro2_arg1   = "";
     this->macro2_arg2   = "";
-    
 }
 
 void Montador::inicializar_processo(string command){
@@ -30,20 +29,21 @@ void Montador::inicializar_processo(string command){
     this->directive_list.push_back("SPACE");
     this->directive_list.push_back("EQU");
     this->directive_list.push_back("IF");
-    this->opcode_list.push_back("ADD");
-    this->opcode_list.push_back("SUB");
-    this->opcode_list.push_back("MULT");
-    this->opcode_list.push_back("DIV");
-    this->opcode_list.push_back("JMP");
-    this->opcode_list.push_back("JMPN");
-    this->opcode_list.push_back("JMPP");
-    this->opcode_list.push_back("JMPZ");
-    this->opcode_list.push_back("COPY");
-    this->opcode_list.push_back("LOAD");
-    this->opcode_list.push_back("STORE");
-    this->opcode_list.push_back("INPUT");
-    this->opcode_list.push_back("OUTPUT");
-    this->opcode_list.push_back("STOP");
+    this->opcode_list.push_back(make_pair("NEVERCALLED", 0));
+    this->opcode_list.push_back(make_pair("ADD", 2));
+    this->opcode_list.push_back(make_pair("SUB", 2));
+    this->opcode_list.push_back(make_pair("MULT", 2));
+    this->opcode_list.push_back(make_pair("DIV", 2));
+    this->opcode_list.push_back(make_pair("JMP", 2));
+    this->opcode_list.push_back(make_pair("JMPN", 2));
+    this->opcode_list.push_back(make_pair("JMPP", 2));
+    this->opcode_list.push_back(make_pair("JMPZ", 2));
+    this->opcode_list.push_back(make_pair("COPY", 3));
+    this->opcode_list.push_back(make_pair("LOAD", 2));
+    this->opcode_list.push_back(make_pair("STORE", 2));
+    this->opcode_list.push_back(make_pair("INPUT", 2));
+    this->opcode_list.push_back(make_pair("OUTPUT", 2));
+    this->opcode_list.push_back(make_pair("STOP", 1));
     if (command == "-o"){
         this->mount();
     }
@@ -263,6 +263,9 @@ void Montador::macro_expander(){
                         }
                     }
                 }
+                else{
+                    macro_command_list1_local = this->macro_command_list1;
+                }
                 command_list.erase(command_list.begin() + i);
                 command_list.insert(
                     command_list.begin() + i,
@@ -316,6 +319,9 @@ void Montador::macro_expander(){
                             );
                         }
                     }
+                }
+                else{
+                    macro_command_list2_local = this->macro_command_list2;
                 }
                 command_list.erase(command_list.begin() + i);
                 command_list.insert(
@@ -417,6 +423,71 @@ void Montador::macro_handler(){
     macro_expander();
 }
 
+void Montador::first_passage(){
+    
+    int superscription_error_flag = 0,
+        label_existence_flag = 0,
+        position_counter = PC_START;
+    size_t identifier_position = 0;
+    vector<string> command_list, command_line;
+    string  symbol_label        = "",
+            operation_label     = "",
+            operator_label      = "",
+            copy_operator_label = "";
+    ifstream preprocessed_file_in;
+    ofstream preprocessed_file_out;
+    preprocessed_file_in.open(this->preprocessed_path);
+    if (preprocessed_file_in.is_open()){
+        while (preprocessed_file_in.good()){
+            getline(preprocessed_file_in, this->line);
+            command_list.push_back(this->line);
+        }
+    }
+    for(size_t i = 0; i < command_list.size(); i++){
+        // cout << command_list.at(i) << endl;
+        istringstream iss(command_list.at(i));
+        command_line.clear();
+        for(string s; iss >> s;){
+            command_line.push_back(s);
+        }
+        for(auto& s: command_line){    
+            if(s.find(":") != std::string::npos){
+                symbol_label = s.substr(
+                    0,
+                    s.length() - 1
+                );
+                for(size_t j = 0; j < this->symbol_table.size(); j++){
+                    if(this->symbol_table.at(j).first == symbol_label){
+                        cout << "SOBRESCRICAO DE SIMBOLO" << endl;
+                        superscription_error_flag = 1;
+                    }
+                }
+                if(!superscription_error_flag){
+                    this->symbol_table.push_back(
+                        make_pair(symbol_label, position_counter)
+                    );
+                    superscription_error_flag = 0;
+                    cout << position_counter << endl;
+                }
+            }
+            for(size_t j = 0; j < this->opcode_list.size(); j++){
+                if(this->opcode_list.at(j).first == s){
+                    operation_label = s;
+                    position_counter += this->opcode_list.at(j).second;
+                }
+            }
+            if(s == "DATA"){
+                cout << "alo" << endl;
+                getchar();
+            }
+        }
+
+
+    }
+}
+
 void Montador::mount(){
-    cout << "SoonTM" << endl;
+    cout << "ENTROU" << endl;
+    first_passage();
+    // second_passage();
 }
