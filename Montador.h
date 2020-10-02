@@ -22,7 +22,9 @@ private:
     void macro_identifier();
     void macro_expander();
     void macro_argument_finder(string declaration_line, int macro_count);
+    void if_equ_handler();
     string asm_path, preprocessed_path, mounted_path, line;
+    vector<string> opcode_list, directive_list;
 
     vector<string> macro_command_list1, macro_command_list2;
     string macro_label1, macro_label2, macro_command;

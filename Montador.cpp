@@ -24,6 +24,26 @@ Montador::Montador(string asm_path_to_file){
 }
 
 void Montador::inicializar_processo(string command){
+    this->directive_list.push_back("SECTION");
+    this->directive_list.push_back("TEXT");
+    this->directive_list.push_back("DATA");
+    this->directive_list.push_back("SPACE");
+    this->directive_list.push_back("EQU");
+    this->directive_list.push_back("IF");
+    this->opcode_list.push_back("ADD");
+    this->opcode_list.push_back("SUB");
+    this->opcode_list.push_back("MULT");
+    this->opcode_list.push_back("DIV");
+    this->opcode_list.push_back("JMP");
+    this->opcode_list.push_back("JMPN");
+    this->opcode_list.push_back("JMPP");
+    this->opcode_list.push_back("JMPZ");
+    this->opcode_list.push_back("COPY");
+    this->opcode_list.push_back("LOAD");
+    this->opcode_list.push_back("STORE");
+    this->opcode_list.push_back("INPUT");
+    this->opcode_list.push_back("OUTPUT");
+    this->opcode_list.push_back("STOP");
     if (command == "-o"){
         this->mount();
     }
@@ -66,8 +86,7 @@ void Montador::preprocess(){
         asm_file.close();
         preprocessed_file.close();
         macro_handler();
-        // if_equ_handler();
-
+        if_equ_handler();
     }
 }
 
@@ -99,8 +118,6 @@ void Montador::macro_argument_finder(string declaration_line, int macro_count){
             }
         }
         if(macro_count == 1){
-            cout << flag_space_comma << endl;
-            getchar();
             switch(occurrences){
                 case 1:
                     this->macro1_arg1 = arg_substr.substr(macro_arg1_pos, arg_substr.length());
@@ -110,23 +127,18 @@ void Montador::macro_argument_finder(string declaration_line, int macro_count){
                     this->macro1_arg2 = arg_substr.substr(macro_arg2_pos, arg_substr.length());
                     break;
             }
-            cout << this->macro1_arg1 << "aaa\t" << this->macro1_arg2 << "bbb\t" << endl;
         }
         else if(macro_count == 2){
-            cout << flag_space_comma << endl;
-            getchar();
             switch(occurrences){
                 
                 case 1:
                     this->macro2_arg1 = arg_substr.substr(macro_arg1_pos, arg_substr.length());
                     break;
                 case 2:
-                    cout << "alo" << arg_substr << endl;
                     this->macro2_arg1 = arg_substr.substr(macro_arg1_pos, macro_arg2_pos - (flag_space_comma + 1));
                     this->macro2_arg2 = arg_substr.substr(macro_arg2_pos, arg_substr.length());
                     break;
             }
-            cout << this->macro2_arg1 << "\t" << this->macro2_arg2 << endl;
         }
     }
 }
@@ -236,7 +248,6 @@ void Montador::macro_expander(){
                                 macro_label_arg2
                             );
                         }
-                        // cout << macro_command_list1_local.at(j) << endl;
                     }
                 }
                 else if(!macro1_arg1.empty()){
@@ -250,7 +261,6 @@ void Montador::macro_expander(){
                                 macro_label_arg1
                             );
                         }
-                        // cout << macro_command_list1_local.at(j) << endl;
                     }
                 }
                 command_list.erase(command_list.begin() + i);
@@ -292,7 +302,6 @@ void Montador::macro_expander(){
                                 macro_label_arg2
                             );
                         }
-                        cout << macro_command_list2_local.at(j) << endl;
                     }
                 }
                 else if(!macro2_arg1.empty()){
@@ -306,7 +315,6 @@ void Montador::macro_expander(){
                                 macro_label_arg1
                             );
                         }
-                        cout << macro_command_list2_local.at(j) << endl;
                     }
                 }
                 command_list.erase(command_list.begin() + i);
@@ -328,9 +336,81 @@ void Montador::macro_expander(){
     }
 }
 
-// void Montador::if_equ_handler(){
-//     vector<string> command_list;
-// }
+void Montador::if_equ_handler(){
+    vector<string> command_list;
+    vector< pair <string,string> > equ_statements;
+    string  equ_label = "",
+            equ_value = "",
+            if_value  = "";
+    ifstream preprocessed_file_in;
+    ofstream preprocessed_file_out;
+
+    preprocessed_file_in.open(this->preprocessed_path);
+    if (preprocessed_file_in.is_open()){
+        while (preprocessed_file_in.good()){
+            getline(preprocessed_file_in, this->line);
+            command_list.push_back(this->line);
+        }
+    }
+    preprocessed_file_in.close();
+    //TRATAMENTO DO EQU
+    //INICIALIZAR A LISTA DE PARES
+    for(size_t i = 0; i < command_list.size(); i++){
+        if(command_list.at(i).find("EQU") != std::string::npos){
+            equ_label = command_list.at(i).substr(
+                0,
+                command_list.at(i).find(":")
+            );
+            equ_value = command_list.at(i).substr(
+                command_list.at(i).find("EQU") + 4,
+                command_list.at(i).length()
+            );
+            equ_statements.push_back(make_pair(equ_label, equ_value));
+            command_list.erase(command_list.begin() + i);
+            i--;
+        }
+    }
+    // SUBSTITUIR AS LABELS PELO VALOR DO EQU
+    for(size_t i = 0; i < command_list.size(); i++){
+        for(size_t j = 0; j < equ_statements.size(); j++){
+            if(command_list.at(i).find(equ_statements.at(j).first) != std::string::npos){
+                command_list.at(i).replace(
+                    command_list.at(i).find(equ_statements.at(j).first),
+                    equ_statements.at(j).first.length(),
+                    equ_statements.at(j).second
+                );
+            }
+        }
+    }
+    // VER SE VAI SER COMPUTADO O IF OU NAO 
+    for(size_t i = 0; i < command_list.size(); i++){
+        if(command_list.at(i).find("IF") != std::string::npos){
+            if_value = command_list.at(i).substr(
+                command_list.at(i).find("IF") + 3,
+                command_list.at(i).length()
+            );
+            if(if_value != "1" 
+            && if_value != "1 " 
+            && if_value != " 1"
+            && if_value != " 1 "){
+                command_list.erase(
+                    command_list.begin() + i,
+                    command_list.begin() + i+2 
+                );
+            }
+            else{
+                command_list.erase(command_list.begin() + i);
+            }
+            i--;
+        }
+    }
+    remove(this->preprocessed_path.c_str());
+    preprocessed_file_out.open(this->preprocessed_path);
+    for (size_t i = 0; i < command_list.size(); i++){
+        preprocessed_file_out << command_list.at(i) << "\n";
+    }
+    preprocessed_file_out.close();
+}
 
 void Montador::macro_handler(){
     macro_identifier();
