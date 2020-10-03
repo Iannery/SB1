@@ -79,6 +79,12 @@ void Montador::preprocess(){
                 this->line.end(),
                 this->line.begin(),
                 ::toupper);
+            // if(this->line.find('\t') != std::string::npos){
+            //     cout << "AAAAAAA" <<endl;
+            // }
+            if(this->line[this->line.length() - 1] == ' '){
+                this->line = this->line.substr(0, this->line.length() -1);
+            }
             if (!this->line.empty()){
                 preprocessed_file << this->line + "\n";
             }
