@@ -7,8 +7,6 @@
 #include "Montador.h"
 using namespace std;
 
-#define PC_START 0
-
 Montador::Montador(string asm_path_to_file){
     this->asm_path = asm_path_to_file;
     this->preprocessed_path = this->asm_path.substr(0, this->asm_path.find("asm")) + "pre";
@@ -79,9 +77,7 @@ void Montador::preprocess(){
                 this->line.end(),
                 this->line.begin(),
                 ::toupper);
-            // if(this->line.find('\t') != std::string::npos){
-            //     cout << "AAAAAAA" <<endl;
-            // }
+            replace(this->line.begin(), this->line.end(), '\t', ' ');
             if(this->line[this->line.length() - 1] == ' '){
                 this->line = this->line.substr(0, this->line.length() -1);
             }
@@ -432,9 +428,9 @@ void Montador::macro_handler(){
 void Montador::first_passage(){
     
     int superscription_error_flag = 0,
-        label_existence_flag = 0,
-        position_counter = PC_START;
-    size_t identifier_position = 0;
+        position_counter = 0;
+    int k = 0;
+    pair <string,int> aux_pair;
     vector<string> command_list, command_line;
     string  symbol_label        = "",
             operation_label     = "",
@@ -451,6 +447,7 @@ void Montador::first_passage(){
     }
     for(size_t i = 0; i < command_list.size(); i++){
         // cout << command_list.at(i) << endl;
+        superscription_error_flag = 0;
         istringstream iss(command_list.at(i));
         command_line.clear();
         for(string s; iss >> s;){
@@ -469,11 +466,11 @@ void Montador::first_passage(){
                     }
                 }
                 if(!superscription_error_flag){
-                    this->symbol_table.push_back(
-                        make_pair(symbol_label, position_counter)
-                    );
-                    superscription_error_flag = 0;
-                    cout << position_counter << endl;
+                    aux_pair = make_pair(symbol_label, position_counter);
+                    this->symbol_table.push_back(aux_pair);
+                    cout << this->symbol_table.at(k).first << '\t' << this->symbol_table.at(k).second << endl;
+                    k++;
+
                 }
             }
             for(size_t j = 0; j < this->opcode_list.size(); j++){
@@ -483,12 +480,9 @@ void Montador::first_passage(){
                 }
             }
             if(s == "DATA"){
-                cout << "alo" << endl;
-                getchar();
+
             }
         }
-
-
     }
 }
 
