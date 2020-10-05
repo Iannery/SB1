@@ -34,4 +34,4 @@ private:
 };
 
 
-#endif //MONTADOR_BIB
+#endif

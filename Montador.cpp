@@ -21,12 +21,9 @@ Montador::Montador(string asm_path_to_file){
 }
 
 void Montador::inicializar_processo(string command){
-    this->directive_list.push_back("SECTION");
-    this->directive_list.push_back("TEXT");
-    this->directive_list.push_back("DATA");
     this->directive_list.push_back("SPACE");
-    this->directive_list.push_back("EQU");
-    this->directive_list.push_back("IF");
+    this->directive_list.push_back("CONST");
+    // Opcode de valor 0 necessário para o indice da lista bater com o codigo do opcode
     this->opcode_list.push_back(make_pair("NEVERCALLED", 0));
     this->opcode_list.push_back(make_pair("ADD", 2));
     this->opcode_list.push_back(make_pair("SUB", 2));
@@ -77,6 +74,7 @@ void Montador::preprocess(){
                 this->line.end(),
                 this->line.begin(),
                 ::toupper);
+            // RETIRA TABEAMENTO
             replace(this->line.begin(), this->line.end(), '\t', ' ');
             if(this->line[this->line.length() - 1] == ' '){
                 this->line = this->line.substr(0, this->line.length() -1);
@@ -429,15 +427,10 @@ void Montador::first_passage(){
     
     int superscription_error_flag = 0,
         position_counter = 0;
-    int k = 0;
     pair <string,int> aux_pair;
     vector<string> command_list, command_line;
-    string  symbol_label        = "",
-            operation_label     = "",
-            operator_label      = "",
-            copy_operator_label = "";
+    string  symbol_label = "";
     ifstream preprocessed_file_in;
-    ofstream preprocessed_file_out;
     preprocessed_file_in.open(this->preprocessed_path);
     if (preprocessed_file_in.is_open()){
         while (preprocessed_file_in.good()){
@@ -445,15 +438,15 @@ void Montador::first_passage(){
             command_list.push_back(this->line);
         }
     }
+    preprocessed_file_in.close();
     for(size_t i = 0; i < command_list.size(); i++){
-        // cout << command_list.at(i) << endl;
         superscription_error_flag = 0;
         istringstream iss(command_list.at(i));
         command_line.clear();
         for(string s; iss >> s;){
             command_line.push_back(s);
         }
-        for(auto& s: command_line){    
+        for(auto& s: command_line){
             if(s.find(":") != std::string::npos){
                 symbol_label = s.substr(
                     0,
@@ -461,33 +454,132 @@ void Montador::first_passage(){
                 );
                 for(size_t j = 0; j < this->symbol_table.size(); j++){
                     if(this->symbol_table.at(j).first == symbol_label){
-                        cout << "SOBRESCRICAO DE SIMBOLO" << endl;
                         superscription_error_flag = 1;
                     }
                 }
                 if(!superscription_error_flag){
                     aux_pair = make_pair(symbol_label, position_counter);
                     this->symbol_table.push_back(aux_pair);
-                    cout << this->symbol_table.at(k).first << '\t' << this->symbol_table.at(k).second << endl;
-                    k++;
-
                 }
             }
             for(size_t j = 0; j < this->opcode_list.size(); j++){
                 if(this->opcode_list.at(j).first == s){
-                    operation_label = s;
                     position_counter += this->opcode_list.at(j).second;
                 }
             }
-            if(s == "DATA"){
-
+            for(size_t j = 0; j < this->directive_list.size(); j++){
+                if(this->directive_list.at(j) == s){
+                    position_counter += 1;
+                }
             }
         }
     }
+    // for(size_t i = 0; i < this->symbol_table.size(); i++){
+    //     cout << this->symbol_table.at(i).first << '\t' << this->symbol_table.at(i).second << endl;
+    // }
+}
+
+void Montador::second_passage(){
+    int flag_const          = 0,
+        flag_section_text   = 0,
+        flag_section_data   = 0;
+    vector<int> object_list;
+    vector<string> command_list, command_line;
+    string  symbol_label = "";
+    ifstream preprocessed_file;
+    ofstream mounted_file;
+    preprocessed_file.open(this->preprocessed_path);
+    if (preprocessed_file.is_open()){
+        while (preprocessed_file.good()){
+            getline(preprocessed_file, this->line);
+            command_list.push_back(this->line);
+        }
+    }
+    preprocessed_file.close();
+
+    for(size_t i = 0; i < command_list.size(); i++){
+        if(command_list.at(i) == "SECTION TEXT"){
+            flag_section_text = 1;
+            flag_section_data = 0;
+        }
+        else if(command_list.at(i) == "SECTION DATA"){
+            flag_section_text = 0;
+            flag_section_data = 1;
+        }
+        if(command_list.at(i).find("COPY") != std::string::npos){
+            command_list.at(i).erase(
+                remove(
+                    command_list.at(i).begin(), 
+                    command_list.at(i).end(), 
+                    ','), 
+                command_list.at(i).end());
+        }
+        istringstream iss(command_list.at(i));
+        command_line.clear();
+        for(string s; iss >> s;){
+            command_line.push_back(s);
+        }
+        for(auto& s: command_line){
+            if(flag_section_text){
+                for(size_t j = 1; j < this->opcode_list.size(); j++){
+                    // SE FOR OPCODE
+                    if(s == this->opcode_list.at(j).first){
+                        int converter = static_cast<int>(j);
+                        object_list.push_back(converter);
+                    }
+                }
+                for(size_t j = 0; j < this->symbol_table.size(); j++){
+                    // SE FOR LABEL
+                    if(s == this->symbol_table.at(j).first){
+                        object_list.push_back(this->symbol_table.at(j).second);
+                    }
+                }
+            }
+            else if(flag_section_data){
+                // SE A ULTIMA SUBSTRING FOR CONST
+                if(flag_const){
+                    object_list.push_back(stoi(s));
+                    flag_const = 0;
+                }
+                // SE FOR SPACE
+                else if(s == this->directive_list.at(0)){
+                    object_list.push_back(0);
+                }
+                // SE FOR CONST
+                else if(s == this->directive_list.at(1)){
+                    flag_const = 1;
+                }
+            }
+        }
+    }
+
+    mounted_file.open(this->mounted_path);
+    if (!mounted_file.is_open()){
+        cerr << "Erro na abertura do arquivo .obj";
+    }
+    else{    
+        for(size_t i = 0; i < object_list.size(); i++){
+            if(i < object_list.size() - 1){
+                mounted_file << object_list.at(i) << " ";
+            }
+            else{
+                mounted_file << object_list.at(i) << "\n";
+            }
+        }
+    }
+    mounted_file.close();
+
+    // for(size_t i = 0; i < object_list.size(); i++){
+    //     if(i < object_list.size() - 1){
+    //         cout << object_list.at(i) << " ";
+    //     }
+    //     else{
+    //         cout << object_list.at(i) << "\n";
+    //     }
+    // }
 }
 
 void Montador::mount(){
-    cout << "ENTROU" << endl;
     first_passage();
-    // second_passage();
+    second_passage();
 }
