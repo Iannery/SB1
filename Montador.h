@@ -1,3 +1,13 @@
+/************************************
+ * Trabalho 1 - Software Basico     *
+ *                                  *
+ * Ian Nery Bandeira                *
+ * 170144739                        *
+ *                                  *
+ * Compilado em:                    *
+ *                                  *
+ ************************************/
+
 #ifndef MONTADOR_BIB
 #define MONTADOR_BIB
 

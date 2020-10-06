@@ -1,3 +1,13 @@
+/************************************
+ * Trabalho 1 - Software Basico     *
+ *                                  *
+ * Ian Nery Bandeira                *
+ * 170144739                        *
+ *                                  *
+ * Compilado em:                    *
+ *                                  *
+ ************************************/
+
 #include <string>
 #include <vector>
 #include <iostream>
@@ -9,8 +19,9 @@ using namespace std;
 
 Montador::Montador(string asm_path_to_file){
     this->asm_path = asm_path_to_file;
-    this->preprocessed_path = this->asm_path.substr(0, this->asm_path.find("asm")) + "pre";
-    this->mounted_path = this->asm_path.substr(0, this->asm_path.find("asm")) + "obj";
+    this->preprocessed_path = this->asm_path.substr(0, this->asm_path.find("asm")) + "pre"; // utiliza o asm_path para criar um path do arquivo .pre
+    this->mounted_path = this->asm_path.substr(0, this->asm_path.find("asm")) + "obj"; // utiliza o asm_path para criar um path do arquivo .obj
+    // inicializacao das strings de macro
     this->macro_label1  = "";
     this->macro_label2  = "";
     this->macro_command = "";
@@ -20,10 +31,13 @@ Montador::Montador(string asm_path_to_file){
     this->macro2_arg2   = "";
 }
 
+/* > incializar_processo(command)
+ * Recebe o comando "-p" ou "-o" para determinar se o programa ira pre-processar ou montar
+ */
 void Montador::inicializar_processo(string command){
     this->directive_list.push_back("SPACE");
     this->directive_list.push_back("CONST");
-    // Opcode de valor 0 necessário para o indice da lista bater com o codigo do opcode
+    // opcode de valor 0 necessário para o indice da lista bater com o codigo do opcode
     this->opcode_list.push_back(make_pair("NEVERCALLED", 0));
     this->opcode_list.push_back(make_pair("ADD", 2));
     this->opcode_list.push_back(make_pair("SUB", 2));
@@ -50,6 +64,10 @@ void Montador::inicializar_processo(string command){
     }
 }
 
+/* > preprocess()
+ * Abre o arquivo .asm, cria o arquivo .pre, retira os comentarios, substitui os char's por maiusculas,
+ * troca tabs por espacos, remove linhas vazias e chama os handlers de macro e if/equ.
+ */
 void Montador::preprocess(){
     ifstream asm_file;
     ofstream preprocessed_file;
@@ -64,22 +82,18 @@ void Montador::preprocess(){
     }
     else{
         while (asm_file.good()){
-            //PEGA LINHA
-            getline(asm_file, this->line);
-            //RETIRA COMENTÁRIOS
-            this->line = this->line.substr(0, this->line.find(";"));
-            //COLOCA TODOS OS CHAR COM MAIUSCULA
+            getline(asm_file, this->line); // pega linha do arquivo .asm
+            this->line = this->line.substr(0, this->line.find(";")); // retira os comentarios
             transform(
                 this->line.begin(),
                 this->line.end(),
                 this->line.begin(),
-                ::toupper);
-            // RETIRA TABEAMENTO
-            replace(this->line.begin(), this->line.end(), '\t', ' ');
-            if(this->line[this->line.length() - 1] == ' '){
+                ::toupper); // substitui todos os char por maiusculas
+            replace(this->line.begin(), this->line.end(), '\t', ' '); // retira tabs
+            if(this->line[this->line.length() - 1] == ' '){ // retira espacos no final de comandos
                 this->line = this->line.substr(0, this->line.length() -1);
             }
-            if (!this->line.empty()){
+            if (!this->line.empty()){ // coloca no arquivo pre-processado caso a linha nao seja vazia
                 preprocessed_file << this->line + "\n";
             }
         }
@@ -90,47 +104,52 @@ void Montador::preprocess(){
     }
 }
 
+/* > macro_argument_finder(declaration_line, macro_count)
+ * Recebe a primeira linha de declaracao do macro e um contador que determina se ele eh o primeiro ou
+ * o segundo macro do programa. Acha quais sao os argumentos do determinado macro e os coloca nas 
+ * variaveis de classe.
+ */
 void Montador::macro_argument_finder(string declaration_line, int macro_count){
     int macro_arg1_pos = 0, 
         macro_arg2_pos = 0, 
         occurrences = 0,
         flag_space_comma = 0;
-    string arg_substr;
+    string arg_substr; // string com tudo depois da substring "MACRO ", que sao os argumentos.
     arg_substr = declaration_line.substr(declaration_line.find("MACRO") + 5, declaration_line.length());
-    if(arg_substr.length() > 1){
+    if(arg_substr.length() > 1){ // se existe algo depois da substring "MACRO ", ou seja, argumento
         for(size_t i = 1; i < arg_substr.length(); i++){
-            if(arg_substr.at(i) == '&'){
-                occurrences++;
+            if(arg_substr.at(i) == '&'){ // se acha algum '&' significa que achou um argumento
+                occurrences++; // determina quantos argumentos tem no macro
                 if(occurrences == 1){
-                    macro_arg1_pos = i;
+                    macro_arg1_pos = i; // determina a posicao do inicio do argumento 1 na string.
                 }
                 else if(occurrences == 2){
-                    macro_arg2_pos = i;
+                    macro_arg2_pos = i; // determina a posicao do inicio do argumento 2 na string, caso exista
                 }
             }
         }
-        for(int i = macro_arg1_pos; i <= macro_arg2_pos; i++){
+        for(int i = macro_arg1_pos; i <= macro_arg2_pos; i++){ // roda a string entre as posicoes do arg1 e arg2
+            // subrotina para determinar se os dois argumentos estao separados por ',' ou por ", "
             if(arg_substr.at(i) == ','){
                 flag_space_comma++;
                 if(arg_substr.at(i+1) == ' '){
-                    flag_space_comma++;
+                    flag_space_comma++; // acresce a flag que vai auxiliar na separacao entre os dois argumentos
                 }
             }
         }
-        if(macro_count == 1){
-            switch(occurrences){
-                case 1:
+        if(macro_count == 1){ // se for o primeiro macro do programa
+            switch(occurrences){ // dependendo do numero de argumentos
+                case 1: // seta o primeiro argumento na variavel de classe
                     this->macro1_arg1 = arg_substr.substr(macro_arg1_pos, arg_substr.length());
                     break;
-                case 2:
+                case 2: // seta os dois argumentos nas respectivas variaveis de classe
                     this->macro1_arg1 = arg_substr.substr(macro_arg1_pos, macro_arg2_pos - (flag_space_comma + 1));
                     this->macro1_arg2 = arg_substr.substr(macro_arg2_pos, arg_substr.length());
                     break;
             }
         }
-        else if(macro_count == 2){
+        else if(macro_count == 2){ // faz o mesmo processo que foi feito no if acima
             switch(occurrences){
-                
                 case 1:
                     this->macro2_arg1 = arg_substr.substr(macro_arg1_pos, arg_substr.length());
                     break;
@@ -143,28 +162,31 @@ void Montador::macro_argument_finder(string declaration_line, int macro_count){
     }
 }
 
+/* > macro_identifier()
+ * Abre o arquivo pre-processado e identifica onde existem as declaracoes de macro, para adiciona-las a
+ * listas de strings, para depois serem expandidos onde forem chamadas
+ */
 void Montador::macro_identifier(){
     int macro_count = 0;
     ifstream preprocessed_file;
     preprocessed_file.open(this->preprocessed_path);
     if (preprocessed_file.is_open()){
         while (preprocessed_file.good()){
-            getline(preprocessed_file, this->line);
+            getline(preprocessed_file, this->line); // recebe linha do arquivo pre-processado
+            if (this->line.find("MACRO") != std::string::npos){ // se nessa linha existir a string "MACRO"
+                macro_count++; // acresce a quantidade de macros presentes no programa
 
-            if (this->line.find("MACRO") != std::string::npos){
-                macro_count++;
-                if (macro_count == 1){
-                    macro_argument_finder(this->line, macro_count);
-                    this->macro_label1 = this->line.substr(0, this->line.find(":"));
-
-                    while (this->line.find("ENDMACRO") == std::string::npos){
-                        getline(preprocessed_file, this->line);
+                if (macro_count == 1){ // se ainda so existe um macro na funcao
+                    macro_argument_finder(this->line, macro_count); // acha os argumentos do macro 1
+                    this->macro_label1 = this->line.substr(0, this->line.find(":")); // recebe a label do macro 1
+                    while (this->line.find("ENDMACRO") == std::string::npos){ // enquanto nao acha a substring "ENDMACRO"
+                        getline(preprocessed_file, this->line); // recebe linha do arquivo preprocessado
                         this->macro_command = this->line;
-                        this->macro_command_list1.push_back(this->macro_command);
+                        this->macro_command_list1.push_back(this->macro_command); // coloca a linha na lista de comandos da macro 1
                     }
-                    this->macro_command_list1.pop_back();
+                    this->macro_command_list1.pop_back(); // retira a linha que possui o "ENDMACRO" da lista
                 }
-                else if (macro_count == 2){
+                else if (macro_count == 2){ // comportamento analogo a quando o macro_count == 1
                     macro_argument_finder(this->line, macro_count);
                     this->macro_label2 = this->line.substr(0, this->line.find(":"));
                     while (this->line.find("ENDMACRO") == std::string::npos){
