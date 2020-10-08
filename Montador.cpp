@@ -1,12 +1,13 @@
-/************************************
- * Trabalho 1 - Software Basico     *
- *                                  *
- * Ian Nery Bandeira                *
- * 170144739                        *
- *                                  *
- * Compilado em:                    *
- *                                  *
- ************************************/
+/****************************************
+ * Trabalho 1 - Software Basico         *
+ *                                      *
+ * Ian Nery Bandeira                    *
+ * 170144739                            *
+ *                                      *
+ * Versao do compilador:                *
+ * g++ (Ubuntu 9.3.0-10ubuntu2) 9.3.0   *
+ *                                      *
+ ****************************************/
 
 #include <string>
 #include <vector>
@@ -19,8 +20,8 @@ using namespace std;
 
 Montador::Montador(string asm_path_to_file){
     this->asm_path = asm_path_to_file;
-    this->preprocessed_path = this->asm_path.substr(0, this->asm_path.find("asm")) + "pre"; // utiliza o asm_path para criar um path do arquivo .pre
-    this->mounted_path = this->asm_path.substr(0, this->asm_path.find("asm")) + "obj"; // utiliza o asm_path para criar um path do arquivo .obj
+    this->preprocessed_path = this->asm_path.substr(0, this->asm_path.find(".")) + ".pre"; // utiliza o asm_path para criar um path do arquivo .pre
+    this->mounted_path = this->asm_path.substr(0, this->asm_path.find(".")) + ".obj"; // utiliza o asm_path para criar um path do arquivo .obj
     // inicializacao das strings de macro
     this->macro_label1  = "";
     this->macro_label2  = "";

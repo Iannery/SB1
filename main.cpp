@@ -1,12 +1,13 @@
-/************************************
- * Trabalho 1 - Software Basico     *
- *                                  *
- * Ian Nery Bandeira                *
- * 170144739                        *
- *                                  *
- * Compilado em:                    *
- *                                  *
- ************************************/
+/****************************************
+ * Trabalho 1 - Software Basico         *
+ *                                      *
+ * Ian Nery Bandeira                    *
+ * 170144739                            *
+ *                                      *
+ * Versao do compilador:                *
+ * g++ (Ubuntu 9.3.0-10ubuntu2) 9.3.0   *
+ *                                      *
+ ****************************************/
 
 #include <string>
 #include <vector>
